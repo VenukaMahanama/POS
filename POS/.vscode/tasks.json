@@ -1,0 +1,25 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Start website (npx serve, port 5500)",
+      "type": "shell",
+      "command": "npx --yes serve -l 5500 .",
+      "isBackground": true,
+      "problemMatcher": []
+    },
+    {
+      "label": "Start website (Python, port 5500)",
+      "type": "shell",
+      "command": "python -m http.server 5500",
+      "isBackground": true,
+      "problemMatcher": []
+    },
+    {
+      "label": "Push backend to Google (clasp push)",
+      "type": "shell",
+      "command": "clasp push",
+      "problemMatcher": []
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "name": "pos",
+  "version": "8.0.0",
+  "private": true,
+  "description": "Point of Sale: static website + Google Apps Script backend (Google Sheets database)",
+  "scripts": {
+    "start": "npx --yes serve -l 5500 .",
+    "push": "clasp push",
+    "open": "clasp open"
+  }
+}

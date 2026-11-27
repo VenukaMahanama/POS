@@ -1,0 +1,14 @@
+/* POS · receipt.js — receipt printing */
+/* ---- receipt ---- */
+function receiptHTML(s){
+ const c=S.settings;
+ return '<div class="rc">'+(bool(c.receiptShowLogo)&&c.logo?'<img src="'+esc(c.logo)+'" alt="" style="max-height:60px;display:block;margin:0 auto 6px">':'')+'<h2>'+esc(c.businessName)+'</h2><div class="ctr">'+esc(c.businessCategory)+'</div>'+
+ (bool(c.receiptShowAddress)&&c.address?'<div class="ctr">'+esc(c.address)+'</div>':'')+(bool(c.receiptShowPhone)&&c.phone?'<div class="ctr">Tel: '+esc(c.phone)+'</div>':'')+(bool(c.receiptShowEmail)&&c.email?'<div class="ctr">'+esc(c.email)+'</div>':'')+
+ '<hr><div>Invoice: <b>'+esc(s.invoiceId)+'</b></div><div>Date: '+esc(fmtDT(s.createdAt))+'</div>'+(s.customerName?'<div>Customer: '+esc(s.customerName)+'</div>':'')+'<hr><table>'+
+ (s.items||[]).map(i=>i.kind==='Replacement'?'<tr><td colspan="2">'+esc(i.productName)+' <b>(replacement)</b></td></tr><tr><td>'+i.quantity+' × return exchange</td><td class="r">FREE</td></tr>':'<tr><td colspan="2">'+esc(i.productName)+'</td></tr><tr><td>'+i.quantity+' × '+money(i.unitPrice)+'</td><td class="r">'+money(i.lineTotal)+'</td></tr>').join('')+'</table>'+((s.returns&&s.returns.length)?'<hr><div><b>Returned items</b></div><table>'+s.returns.map(r=>'<tr><td>'+esc(r.productName)+' × '+r.quantity+'<br><small>'+(r.resolution==='Cash deducted'?'Cash deducted':'Replacement given')+'</small></td><td class="r">'+(r.resolution==='Cash deducted'?'-'+money(r.quantity*r.value):'')+'</td></tr>').join('')+'</table>':'')+'<hr><table><tr><td>Subtotal</td><td class="r">'+money(s.subtotal)+'</td></tr>'+
+ (s.discount>0?'<tr><td>Discount</td><td class="r">-'+money(s.discount)+'</td></tr>':'')+(s.tax>0?'<tr><td>Tax</td><td class="r">'+money(s.tax)+'</td></tr>':'')+(s.returnDeduction>0?'<tr><td>Returns deducted</td><td class="r">-'+money(s.returnDeduction)+'</td></tr>':'')+'<tr><td><b>Total</b></td><td class="r"><b>'+money(s.total)+'</b></td></tr>'+(s.refund>0?'<tr><td>Cash given back</td><td class="r">'+money(s.refund)+'</td></tr>':'')+'</table><div>Payment: '+esc(s.paymentMethod)+'</div><hr><div class="ctr">'+esc(c.receiptFooter)+'</div></div>'}
+function showReceipt(s){S.last=receiptHTML(s);modal(S.last+'<div class="row" style="margin-top:14px"><button class="btn" onclick="printReceipt(S.last)">Print receipt</button><button class="btn alt" onclick="closeModal()">Close</button></div>')}
+function printReceipt(html){
+ const f=document.createElement('iframe');f.style.cssText='position:fixed;width:0;height:0;border:0';document.body.appendChild(f);
+ const d=f.contentWindow.document;d.open();d.write('<!DOCTYPE html><html><head><title>Receipt</title><style>@page{margin:6mm}body{margin:0}'+RCSS+'</style></head><body>'+html+'</body></html>');d.close();
+ setTimeout(()=>{f.contentWindow.focus();f.contentWindow.print();setTimeout(()=>f.remove(),2000)},400)}

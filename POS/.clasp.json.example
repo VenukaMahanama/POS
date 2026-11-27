@@ -1,0 +1,20 @@
+{
+  "scriptId": "PASTE_YOUR_SCRIPT_ID_HERE",
+  "rootDir": "apps-script",
+  "filePushOrder": [
+    "apps-script/Config.gs",
+    "apps-script/Core.gs",
+    "apps-script/Auth.gs",
+    "apps-script/Settings.gs",
+    "apps-script/Products.gs",
+    "apps-script/Customers.gs",
+    "apps-script/Sales.gs",
+    "apps-script/Payments.gs",
+    "apps-script/Orders.gs",
+    "apps-script/SupplierInvoices.gs",
+    "apps-script/Returns.gs",
+    "apps-script/Expenses.gs",
+    "apps-script/Reports.gs",
+    "apps-script/Api.gs"
+  ]
+}

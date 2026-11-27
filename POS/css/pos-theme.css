@@ -1,0 +1,62 @@
+/* POS · pos-theme.css — the colourful look of the POS screen.
+   Every product tile gets a colour from its category (the --h hue is set in js/pos.js).
+   Change the colours here without touching any JavaScript. */
+:root{--pos-a:#0ea5e9;--pos-b:#6366f1;--pos-c:#ec4899;--pos-ok:#16a34a}
+
+/* ---- top row: mode, search, category chips ---- */
+#pos select#pmode{background:linear-gradient(90deg,#e0f2fe,#ede9fe);border-color:#c7d2fe;font-weight:600;color:#3730a3}
+#pos #ps{border:2px solid #c7d2fe;background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%236366f1' stroke-width='2.5'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='m20 20-3.5-3.5'/%3E%3C/svg%3E") no-repeat 10px center;padding-left:36px;border-radius:12px}
+#pos #ps:focus{border-color:var(--pos-b);box-shadow:0 0 0 3px #6366f133;outline:none}
+.chips{display:flex;gap:6px;overflow-x:auto;padding:8px 2px 6px;scrollbar-width:thin}
+.chip{flex:none;border:1px solid hsl(var(--h,215) 60% 80%);background:hsl(var(--h,215) 90% 96%);color:hsl(var(--h,215) 60% 26%);padding:6px 14px;border-radius:999px;font:inherit;font-size:13.5px;font-weight:600;cursor:pointer;white-space:nowrap;transition:transform .08s}
+.chip:hover{transform:translateY(-1px)}
+.chip.on{background:hsl(var(--h,215) 70% 45%);border-color:hsl(var(--h,215) 70% 38%);color:#fff;box-shadow:0 3px 8px hsl(var(--h,215) 70% 40% / .4)}
+.chip.all{--h:225}
+
+/* ---- product tiles ---- */
+.pgrid{gap:10px;grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}
+.prod{display:flex;flex-direction:column;gap:3px;padding:10px 10px 10px 12px;border:1px solid hsl(var(--h,215) 55% 86%);border-left:6px solid hsl(var(--h,215) 70% 50%);background:linear-gradient(160deg,hsl(var(--h,215) 100% 96%),#fff 70%);border-radius:12px;box-shadow:0 1px 3px #0001;transition:transform .08s,box-shadow .12s}
+.prod:hover{transform:translateY(-2px);box-shadow:0 7px 16px hsl(var(--h,215) 60% 35% / .25)}
+.prod:active{transform:scale(.97)}
+.prod .pn{font-weight:600;line-height:1.25;word-break:break-word}
+.prod .psku{font-size:11.5px;color:#64748b}
+.prod .ppr{margin-top:3px;display:flex;align-items:baseline;gap:6px;flex-wrap:wrap}
+.prod .ppr small{display:block;width:100%;font-size:10.5px;text-transform:uppercase;letter-spacing:.5px;color:hsl(var(--h,215) 45% 38%)}
+.prod .ppr b{font-size:18px;color:hsl(var(--h,215) 75% 30%)}
+.prod .ppr s{font-size:12px;color:#94a3b8}
+.prod .badge{align-self:flex-start;margin-top:4px;font-weight:600}
+.prod .badge.ok{background:#d1fae5;color:#065f46}.badge.warn{background:#fef3c7;color:#92400e}.badge.bad{background:#fee2e2;color:#991b1b}
+.prod.out{opacity:.5;filter:grayscale(.6)}
+
+/* ---- cart ---- */
+.cartpane{background:linear-gradient(180deg,#f5f9ff,#fff 180px);border:1px solid #c7d2fe;box-shadow:0 4px 14px #6366f126}
+.cart-hd{background:linear-gradient(90deg,var(--pos-a),var(--pos-b) 60%,var(--pos-c));margin:-12px -12px 8px;padding:10px 12px;border-radius:8px 8px 0 0;color:#fff}
+.cart-hd h3{color:#fff;text-shadow:0 1px 2px #0003}
+.cart-hd .btn.alt{background:#ffffff2e;color:#fff;border:1px solid #ffffff66;min-height:34px;padding:6px 10px}
+.cart-hd .btn.alt:hover{background:#ffffff4d}
+.ci .cn b{color:#1e293b}
+.ci .cn small:first-of-type{color:#4f46e5;font-weight:600}
+.ci .cq{border:2px solid #c7d2fe;border-radius:8px;text-align:center;font-weight:600}
+.ci .ct{color:#0f766e}
+.cartpane label{color:#475569}
+
+/* ---- payment method buttons ---- */
+.payseg{display:flex;gap:6px;margin:4px 0 8px}
+.payseg button{flex:1;border:0;border-radius:10px;padding:10px 6px;font:inherit;font-weight:700;color:#fff;cursor:pointer;opacity:.5;transition:opacity .1s,transform .1s}
+.payseg button[data-m=Cash]{background:linear-gradient(135deg,#16a34a,#4ade80)}
+.payseg button[data-m=Credit]{background:linear-gradient(135deg,#ea580c,#fbbf24)}
+.payseg button[data-m=Cheque]{background:linear-gradient(135deg,#2563eb,#60a5fa)}
+.payseg button.on{opacity:1;transform:translateY(-1px);box-shadow:0 4px 10px #0003,0 0 0 3px #fff,0 0 0 5px #6366f1}
+
+/* ---- totals + checkout ---- */
+#tot table{background:#f1f5f9;border-radius:10px;padding:4px 10px;margin-top:6px}
+#tot td{border-bottom:1px solid #e2e8f0}
+#tot tr.tt td{font-size:20px;color:#0f766e;background:#ccfbf1;border-bottom:0}
+#tot tr.tt td:first-child{border-radius:8px 0 0 8px}#tot tr.tt td:last-child{border-radius:0 8px 8px 0}
+.btn.go{background:linear-gradient(90deg,#16a34a,#22c55e);font-size:18px;padding:13px;border-radius:12px;box-shadow:0 5px 14px #16a34a66}
+.btn.go:hover{filter:brightness(1.06)}
+.btn.go:disabled{background:#cbd5e1;box-shadow:none}
+
+/* ---- the bar / button that brings the cart back ---- */
+.cartbar{background:linear-gradient(90deg,var(--pos-a),var(--pos-b))!important;color:#fff!important}
+.cartbar.show{box-shadow:0 6px 18px #6366f166}
