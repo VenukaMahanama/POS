@@ -21,7 +21,7 @@ function invFiltered(){const f=S.invF,k=norm(f.q);
  const L=S.invs.map((x,i)=>({x,i})).filter(({x})=>(!f.from||x.date>=f.from)&&(!f.to||x.date<=f.to)&&(!f.pay||x.payStatus===f.pay)&&(!f.stock||(f.stock==='Received')===(x.status==='Received'))&&(!k||norm([x.invoiceNo,x.taxInvoiceNo,x.soNo,x.poNo,x.supplier,x.customerName,x.orderNo,x.payMethod,x.place].join(' ')+' '+x.items.map(i=>i.code+' '+i.description).join(' ')).indexOf(k)>-1));
  L.sort((a,b)=>String(b.x.date).localeCompare(String(a.x.date))||tmin(b.x.postingTime)-tmin(a.x.postingTime));return L}
 function vInvList(){S.invF=S.invF||{from:'',to:'',q:'',pay:'',stock:''};S.invOpen=S.invOpen||{};S.invShow=50;const f=S.invF;
- $('#ib').innerHTML='<div class="row"><button class="btn" onclick="impForm()">⬆ Import invoices (PDF / paste)</button><button class="btn alt" onclick="S.invd=null;go(\'invnew\')">+ Add manually</button></div>'+
+ $('#ib').innerHTML='<div class="row"><button class="btn" onclick="impForm()">⬆ Import invoices (PDF / paste)</button><button class="btn alt" onclick="invClear();go(\'invnew\')">+ Add manually</button></div>'+
  '<div class="card" style="margin-top:10px"><div class="row"><div><label>Invoice date from</label><input type="date" id="vf1" value="'+esc(f.from)+'"></div><div><label>to</label><input type="date" id="vf2" value="'+esc(f.to)+'"></div><div style="flex:2"><label>Search (invoice no., SO no., customer, item code or name)</label><input id="vfq" value="'+esc(f.q)+'" placeholder="Type to search…"></div><div><label>Payment</label><select id="vfp"><option value="">All</option><option>Unpaid</option><option>Partly paid</option><option>Paid</option></select></div><div><label>Stock</label><select id="vfs"><option value="">All</option><option>Received</option><option>Not received</option></select></div></div><div class="row" style="margin-top:8px"><button class="btn alt" style="flex:none" onclick="invQuick(\'today\')">Today</button><button class="btn alt" style="flex:none" onclick="invQuick(\'week\')">Last 7 days</button><button class="btn alt" style="flex:none" onclick="invQuick(\'month\')">This month</button><button class="btn alt" style="flex:none" onclick="invQuick(\'all\')">All dates</button></div></div><div id="ivk" style="margin-top:10px"></div><div id="ivl"></div>';
  $('#vfp').value=f.pay;$('#vfs').value=f.stock;
  const sync=()=>{S.invF={from:$('#vf1').value,to:$('#vf2').value,q:$('#vfq').value,pay:$('#vfp').value,stock:$('#vfs').value};S.invShow=50;drawInvList()};
@@ -91,14 +91,14 @@ function invLast(code){ // most recent supplier-invoice line for this code (pric
  (S.invs||[]).forEach(v=>(v.items||[]).forEach(it=>{if(!it.free&&String(it.code||'').toLowerCase()===k&&(!best||String(v.date)>=bd)){best=it;bd=String(v.date)}}));
  return best}
 function vInvNew(){
- S.invd=S.invd||{invoiceNo:'',date:ymd(new Date()),supplier:ls.get('invSup','Kelani Cables'),payMethod:'Cash',items:[],recvNow:false,recvDate:ymd(new Date())};
- drawInvNew();
+ S.invd=S.invd||invDraftGet()||{invoiceNo:'',date:ymd(new Date()),supplier:ls.get('invSup','Kelani Cables'),payMethod:'Cash',items:[],recvNow:false,recvDate:ymd(new Date())};
+ drawInvNew();$('#app').oninput=invSaveDraft;
  if(!S.invs)run(null,async()=>{S.invs=await api('getSupplierInvoices',{})})}
 function drawInvNew(){const d=S.invd;
  $('#app').innerHTML='<div class="card"><div class="row"><div><label>Invoice no.*</label><input value="'+esc(d.invoiceNo)+'" oninput="S.invd.invoiceNo=this.value"></div><div><label>Invoice date*</label><input type="date" max="'+ymd(new Date())+'" value="'+esc(d.date)+'" oninput="S.invd.date=this.value"></div><div><label>Supplier</label><input value="'+esc(d.supplier)+'" oninput="S.invd.supplier=this.value"></div><div><label>Payment type</label><select onchange="S.invd.payMethod=this.value;drawInvRows()"><option'+(invCredit()?'':' selected')+'>Cash</option><option'+(invCredit()?' selected':'')+'>Credit</option></select></div></div><label style="display:flex;gap:8px;align-items:center;margin-top:10px;color:var(--t);font-size:14px"><input type="checkbox" style="width:auto" '+(d.recvNow?'checked ':'')+'onchange="S.invd.recvNow=this.checked;$(\'#ivrd\').style.display=this.checked?\'\':\'none\'"> The stock has already arrived: receive it into my stock when I save</label><div id="ivrd" style="max-width:220px;'+(d.recvNow?'':'display:none')+'"><label>Received date</label><input type="date" max="'+ymd(new Date())+'" value="'+esc(d.recvDate||ymd(new Date()))+'" oninput="S.invd.recvDate=this.value"></div></div>'+
  '<div class="card" style="margin-top:10px"><label>Add item: type the product name or code</label><div class="combo"><input id="ivs" autocomplete="off" placeholder="Search products…" oninput="invSearch(this.value)" onfocus="invSearch(this.value)" onkeydown="invSKey(event)"><div class="cl" id="ivd" style="display:none"></div></div>'+
  '<div id="ivrows" style="margin-top:12px"></div><div id="it" style="margin-top:12px"></div>'+
- '<div class="row" style="margin-top:12px"><button class="btn alt" onclick="invAddCustom(\'\')">+ Item not in Products</button><button class="btn" onclick="saveInvNew(this)">Save invoice</button><button class="btn alt" onclick="S.invd=null;go(\'invoices\')">Cancel</button></div></div>';
+ '<div class="row" style="margin-top:12px"><button class="btn alt" onclick="invAddCustom(\'\')">+ Item not in Products</button><button class="btn" onclick="saveInvNew(this)">Save invoice</button><button class="btn alt" onclick="if(!S.invd.items.length||confirm(\'Discard this invoice draft?\')){invClear();go(\'invoices\')}">Cancel</button></div></div>';
  drawInvRows()}
 function invSearch(q){const k=norm(q),el=$('#ivd');if(!el)return;
  const have={};S.invd.items.forEach(it=>{have[String(it.code).toLowerCase()]=1});
@@ -124,24 +124,33 @@ function invAddCustom(txt){S.invd.items.push(Object.assign(blankRow(),{descripti
  const i=S.invd.items.length-1,e=$('#icd'+i);if(e)e.focus()}
 function invFocusQty(i){const e=$('#iq'+i);if(e){e.focus();e.select();e.scrollIntoView({block:'center',behavior:'smooth'})}}
 function invQKey(e){if(e.key==='Enter'){e.preventDefault();const s=$('#ivs');s.focus();s.select()}}
-/* Payment type: Cash (default) or Credit. Item details of products that are already in Products are locked here (change them in Products). The discount can only be changed when the payment type is Credit. */
-const invCredit=()=>/credit/i.test((S.invd&&S.invd.payMethod)||''),invDisc=it=>invCredit()?(Number(it.disc)||0):0;
+/* Payment type: Cash (default) or Credit.
+   - An item that is already in Products: code, name and unit are always locked (change them in Products).
+   - On a CASH invoice the selling price and the discount are locked too, but they stay visible with the same values.
+   - On a CREDIT invoice the selling price and the discount of those items can be changed.
+   - The discount box of any row is locked on Cash (it keeps its value, nothing is reset or removed).
+   The invoice being typed is also kept as a draft in the browser, so rows never vanish when you leave the page. */
+const invCredit=()=>/credit/i.test((S.invd&&S.invd.payMethod)||''),invDisc=it=>Number(it.disc)||0;
+const invDraftGet=()=>{try{const d=JSON.parse(ls.get('invDraft','')||'null');return d&&Array.isArray(d.items)?d:null}catch(e){return null}};
+function invSaveDraft(){if(S.invd&&$('#ivrows'))ls.set('invDraft',JSON.stringify(S.invd))}
+function invClear(){S.invd=null;ls.set('invDraft','')}
 function invSync(it){const p=it.pid&&S.products.find(x=>x.id===it.pid);if(p){it.code=p.sku;it.description=p.name}return !!p}
 function drawInvRows(){const d=S.invd,cr=invCredit();
  $('#ivrows').innerHTML=d.items.length?'<div class="tw"><table><thead><tr><th>Code</th><th>Description</th><th>Qty*</th><th>Unit</th><th>Selling price</th><th>Disc %</th><th class="r">Amount</th><th></th></tr></thead><tbody>'+
- d.items.map((it,i)=>{const lk=invSync(it),L=lk?' readonly class="lk" title="From Products. To change it, edit the product in Products."':'';
+ d.items.map((it,i)=>{const lk=invSync(it),L=lk?' readonly class="lk" title="From Products. To change it, edit the product in Products."':'',
+  P=lk&&!cr?' readonly class="lk" title="Locked on a Cash invoice. Choose Credit to change it."':'',D=!cr?' readonly class="lk" title="Locked on a Cash invoice. Choose Credit to change it."':'';
   return '<tr><td><input id="icd'+i+'" style="width:120px" value="'+esc(it.code)+'"'+L+' oninput="invU('+i+',\'code\',this.value)" onchange="invCode('+i+',this.value)"></td><td><input style="width:230px" value="'+esc(it.description)+'"'+L+' oninput="invU('+i+',\'description\',this.value)"></td>'+
   '<td><input id="iq'+i+'" type="number" inputmode="decimal" min="0" step="any" style="width:80px;border:2px solid var(--p,#4a90d9)" value="'+esc(it.qty)+'" placeholder="Qty" oninput="invU('+i+',\'qty\',this.value)" onkeydown="invQKey(event)"></td>'+
-  '<td><input style="width:85px" value="'+esc(it.uom)+'"'+L+' oninput="invU('+i+',\'uom\',this.value)"></td><td><input type="number" min="0" step="any" style="width:105px" value="'+it.unitPrice+'" oninput="invU('+i+',\'unitPrice\',this.value)"></td>'+
-  '<td><input type="number" min="0" max="100" step="any" style="width:70px" value="'+(cr?it.disc:0)+'"'+(cr?'':' disabled class="lk" title="The discount can be changed only when the payment type is Credit"')+' oninput="invU('+i+',\'disc\',this.value)"></td><td class="r" id="ia'+i+'"></td><td style="white-space:nowrap">'+(lk?'<button class="btn alt" onclick="invEditProd(\''+esc(it.pid)+'\')" title="Edit this product in Products" aria-label="Edit in Products">✎</button> ':'')+'<button class="btn red" onclick="invRm('+i+')" aria-label="Remove">✕</button></td></tr>'}).join('')+
-  '</tbody></table></div><p class="lknote">🔒 Items that are already in Products cannot be changed here. To change a code, name or unit, press ✎ (or open Products) and edit the product.'+(cr?'':' The discount can be changed only when the payment type is <b>Credit</b>.')+'</p>':'<div class="empty">No items yet. Search above, pick a product, then type the quantity.</div>';
+  '<td><input style="width:85px" value="'+esc(it.uom)+'"'+L+' oninput="invU('+i+',\'uom\',this.value)"></td><td><input type="number" min="0" step="any" style="width:105px" value="'+it.unitPrice+'"'+P+' oninput="invU('+i+',\'unitPrice\',this.value)"></td>'+
+  '<td><input type="number" min="0" max="100" step="any" style="width:70px" value="'+(Number(it.disc)||0)+'"'+D+' oninput="invU('+i+',\'disc\',this.value)"></td><td class="r" id="ia'+i+'"></td><td style="white-space:nowrap">'+(lk?'<button class="btn alt" onclick="invEditProd(\''+esc(it.pid)+'\')" title="Edit this product in Products" aria-label="Edit in Products">✎</button> ':'')+'<button class="btn red" onclick="invRm('+i+')" aria-label="Remove">✕</button></td></tr>'}).join('')+
+  '</tbody></table></div><p class="lknote">🔒 Items already in Products: the code, name and unit cannot be changed here (press ✎ to edit the product in Products). '+(cr?'On a <b>Credit</b> invoice you can change their selling price and discount.':'On a <b>Cash</b> invoice their selling price and discount are locked too (they stay as they are). Choose <b>Credit</b> to change them.')+' Your invoice is saved as a draft while you type.</p>':'<div class="empty">No items yet. Search above, pick a product, then type the quantity.</div>';
  invTot()}
 function invCode(i,v){const it=S.invd.items[i];if(!it||it.pid)return;const p=findSku(String(v).trim());if(!p)return;const l=invLast(p.sku);
  Object.assign(it,{pid:p.id,code:p.sku,description:p.name,uom:(l&&l.uom)||it.uom||'Numbers',unitPrice:l?Number(l.unitPrice):(Number(it.unitPrice)||Number(p.price)||0),disc:l?Number(l.discPct)||0:it.disc});drawInvRows();toast('“'+p.name+'” is already in Products, so its details were loaded from Products and locked.','ok')}
 function invEditProd(id){go('products');setTimeout(()=>{try{prodForm(id)}catch(e){}},500)}
 function invU(i,f,v){S.invd.items[i][f]=['qty','unitPrice','disc'].indexOf(f)>-1?(f==='qty'&&v===''?'':(Number(v)||0)):v;invTot()}
 function invRm(i){S.invd.items.splice(i,1);drawInvRows()}
-function invTot(){let sub=0,dis=0,u=0;S.invd.items.forEach((it,i)=>{const q=Number(it.qty)||0,a=Math.round(q*it.unitPrice*100)/100;sub+=a;dis+=a*invDisc(it)/100;u+=q;const e=$('#ia'+i);if(e)e.textContent=money(a)});
+function invTot(){invSaveDraft();let sub=0,dis=0,u=0;S.invd.items.forEach((it,i)=>{const q=Number(it.qty)||0,a=Math.round(q*it.unitPrice*100)/100;sub+=a;dis+=a*invDisc(it)/100;u+=q;const e=$('#ia'+i);if(e)e.textContent=money(a)});
  const t=$('#it');if(t)t.innerHTML=S.invd.items.length?'<table style="max-width:340px;margin-left:auto"><tr><td>Items / units</td><td class="r">'+S.invd.items.length+' / '+u+'</td></tr><tr><td>Subtotal</td><td class="r">'+money(sub)+'</td></tr><tr><td>Trade discount</td><td class="r">-'+money(dis)+'</td></tr><tr><td><b>Total</b></td><td class="r"><b>'+money(sub-dis)+'</b></td></tr></table>':''}
 function saveInvNew(b){run(b,async()=>{const d=S.invd;
  if(!d.invoiceNo.trim())throw new Error('Enter the invoice number.');if(!d.date)throw new Error('Enter the invoice date.');
@@ -149,7 +158,7 @@ function saveInvNew(b){run(b,async()=>{const d=S.invd;
  L.forEach((i,n)=>{if(!String(i.code).trim())throw new Error('Row '+(n+1)+' needs a code (SKU).');if(!(Number(i.qty)>0))throw new Error('Enter the quantity for '+(i.description||i.code)+'.')});
  const rs=await api('saveSupplierInvoice',{invoiceNo:d.invoiceNo,date:d.date,supplier:d.supplier,payMethod:invCredit()?'Credit':'Cash',customerName:'',items:L.map(i=>({code:i.code,description:i.description,qty:Number(i.qty),uom:i.uom,unitPrice:i.unitPrice,disc:invDisc(i),amount:Math.round(Number(i.qty)*i.unitPrice*100)/100}))});
  let rcv='';if(d.recvNow){try{await api('receiveSupplierInvoice',{id:rs.id,receivedDate:d.recvDate||ymd(new Date())});rcv=' and stock received'}catch(e){toast('Saved, but receiving the stock failed: '+e.message,'err')}}
- ls.set('invSup',d.supplier);S.invd=null;await loadAll();await updInv();toast('Invoice saved'+rcv+(rs.created?' and '+rs.created+' new product(s) added to Products':''),'ok');go('invoices')})}
+ ls.set('invSup',d.supplier);invClear();await loadAll();await updInv();toast('Invoice saved'+rcv+(rs.created?' and '+rs.created+' new product(s) added to Products':''),'ok');go('invoices')})}
 
 
 /* ---- returns: customer returns we send back to the supplier for credit ---- */

@@ -6,14 +6,23 @@
 
 ---
 
+## Revision 10 (29 Nov 2026) — what changed since revision 9 (supplier invoice page only; no backend change)
+
+This revision **replaces the Cash/discount rule of revision 9 (points 3 and 4)**:
+1. **Cash invoice:** every item that is already in Products keeps showing its **code, name, unit, selling price and discount with the same values as before, but none of them can be changed** (grey, dashed, read-only 🔒; the ✎ button opens the product in Products). The **discount box of every row is read-only on Cash** and keeps its value — it is **no longer reset to 0 and still counts in the totals and in the saved invoice**. Quantity stays editable. An item that is *not* in Products can still have its code, name, unit and selling price typed (its discount box is locked on Cash).
+2. **Credit invoice:** code, name and unit of items already in Products stay locked (change them in Products); their **selling price and discount become editable**.
+3. **Nothing vanishes:** switching Cash ⇄ Credit only changes which boxes are locked; rows and all their values stay. The invoice being typed is also stored as a **draft in the browser** (`localStorage` key `invDraft`) after every change; it is restored when the page is opened again (after visiting Products with ✎, after a reload, after a log-out/in on the same browser) and removed by **Save invoice**, **Cancel** (which asks "Discard this invoice draft?" when there are items) and **+ Add manual invoice** (which starts a new one).
+4. The note under the item table says: "🔒 Items already in Products: the code, name and unit cannot be changed here (press ✎ …). On a Cash invoice their selling price and discount are locked too (they stay as they are). Choose Credit to change them. Your invoice is saved as a draft while you type." (On Credit the second sentence is "On a Credit invoice you can change their selling price and discount.")
+Code: Appendix O (`js/suppliers.js`).
+
 ## Revision 9 (28 Nov 2026) — what changed since revision 8
 
 1. **Role and Logout on every page, top right** (7.1): the white top bar now shows, on the right, a **🌐 Business site** button (Admin only), the user's name (hidden on phones), a **role badge** (purple **Admin** / teal **Cashier**) and a red **⎋ Logout** button. Logout asks "The cart still has items. Log out anyway?" when the POS cart is not empty. (The small user chip at the bottom of the sidebar still opens *My account*.)
 2. **Business site link**: the button opens `http://kclsfa.acl.lk:8796/Reports/ReportPrint.aspx` in a **new tab** (`target="_blank" rel="noopener noreferrer"`). The address is the new setting **`businessSiteUrl`** (Settings page: "Business site link (opens in a new tab)"; default above; must start with `http://` or `https://`, otherwise stored empty and the button is hidden). It is an address on the company's own network, so it opens only where that network/VPN is reachable; it cannot be shown inside the POS page.
 3. **Supplier invoices — item details of products that already exist are locked** (5.11, 7.15): on the manual invoice page a row for a product that is already in Products (picked from the search, or whose typed code matches a product's SKU) shows **Code, Description and Unit read-only** (grey, dashed, 🔒) with a ✎ button that opens that product in Products. The row always follows the product (rename it in Products and the invoice row changes). Typing a code that exists converts the row (details loaded, price/discount prefilled from the last invoice line) with a message. **Qty, Selling price and Amount stay editable.** The server enforces the name too: `saveSupplierInvoice` replaces the description of any line whose code matches an active product by the product's name (keeping a trailing "(FREE)").
-4. **Supplier invoices — "Payment terms" became "Payment type"**: a drop-down **Cash** (default) / **Credit**; saved in `payMethod` as `Cash` or `Credit`. **The item discount (Disc %) can be changed only when the type is Credit**: with Cash the box is disabled and shows 0 and the discount is **0 in the totals and in the saved invoice**; switching to Credit unlocks the boxes again (the values typed earlier come back; picking a product prefills the discount of its last invoice line). Imported (PDF) invoices keep what the supplier invoice says.
+4. **Supplier invoices — "Payment terms" became "Payment type"**: a drop-down **Cash** (default) / **Credit**; saved in `payMethod` as `Cash` or `Credit`. **The item discount (Disc %) can be changed only when the type is Credit** (revision 10: on Cash the box is read-only but keeps its value and the value still counts; picking a product prefills the discount of its last invoice line). Imported (PDF) invoices keep what the supplier invoice says.
 5. **Add a new customer from the POS** (7.3): when the name typed in the POS customer box matches nobody (or only partly), the list ends with **➕ Add “name” as a new customer**. It opens a form (**Name\*** prefilled, Phone, Address, Route [with the existing routes], Email) → `saveCustomer` (allowed for Cashiers) → the customer is added to the list and **selected for the sale at once** ("✓ Customer selected", special prices loaded). Enter in the box picks the first row, so with no match Enter opens this form. An exact name match shows no add row.
-6. `SCHEMA_VER` is now `'r7'` (so the new setting row is seeded automatically); script links end with `?v=9`.
+6. `SCHEMA_VER` is now `'r7'` (so the new setting row is seeded automatically); script links end with `?v=10`.
 
 ## Revision 8 (26 Nov 2026) — what changed since revision 7
 
@@ -521,7 +530,7 @@ Two tabs: **Invoices | Returns**.
 **Import window:** "Our name on invoices" (default `Nethmina`, remembered), Supplier (default `Kelani Cables`, remembered), PDF file chooser, or paste text → **Read invoices**. The result lists every invoice found with a checkbox (ticked only if the ship-to name contains our name, it is not a duplicate, and it has items), date/time/SO, customer, item count, free-item note, total, and warnings ("Already saved", "Not ours", "Items add up to X but the invoice says Y. Check it.", "No item lines could be read"). **Save ticked invoices** saves them as Pending and adds missing products.
 **Receive window:** explains how many lines match existing products, lists any new products with selling-price boxes pre-filled from the invoice, and (when some existing products have a different selling price) a tick box "Also set the selling price of N existing product(s) to the invoice price".
 **Pay window:** balance, Paid by (Cheque / Bank Transfer), amount (default balance), date, note.
-**Manual entry page (revision 2):** header card (invoice no.\*, invoice date\*, supplier [remembered], **Payment type** [Cash default / Credit]). Under it an **Add item** search box ("Search products…") with a drop-down of up to 40 matching products (match on name or SKU; exact SKU / name-starts-with first, then A–Z; shows name, SKU, stock and "already on this invoice"); arrow keys move, **Enter picks**, Esc closes; the last drop-down line is "Add “text” as a new item". Picking a product adds a row **auto-filled**: code = SKU, description = name, unit / selling price / disc % from the **most recent supplier-invoice line with that code** (else the product's selling price, 0 %, unit `Numbers`), **quantity empty**; the cursor jumps to that row's Qty box (selected). **Enter in Qty returns to the search box** for the next item. Picking a product already on the invoice just focuses its Qty. Rows show Code, Description, **Qty\*** (highlighted box), Unit, Selling price, Disc %, Amount, ✕ remove — **Code, Description and Unit are read-only when the product already exists in Products** (🔒, ✎ opens it in Products); Qty, Selling price and Amount stay editable; **Disc % is editable only when the Payment type is Credit** (Cash: disabled, 0). A custom item button ("+ Item not in Products") adds a blank row (code gets the focus); such items are created in Products when the invoice is saved. Live totals box: items / units, Subtotal, Trade discount, Total. Save checks: invoice no., date, at least one item, a code on every row, quantity > 0 on every row. Reference code: Appendix F.
+**Manual entry page (revision 2):** header card (invoice no.\*, invoice date\*, supplier [remembered], **Payment type** [Cash default / Credit]). Under it an **Add item** search box ("Search products…") with a drop-down of up to 40 matching products (match on name or SKU; exact SKU / name-starts-with first, then A–Z; shows name, SKU, stock and "already on this invoice"); arrow keys move, **Enter picks**, Esc closes; the last drop-down line is "Add “text” as a new item". Picking a product adds a row **auto-filled**: code = SKU, description = name, unit / selling price / disc % from the **most recent supplier-invoice line with that code** (else the product's selling price, 0 %, unit `Numbers`), **quantity empty**; the cursor jumps to that row's Qty box (selected). **Enter in Qty returns to the search box** for the next item. Picking a product already on the invoice just focuses its Qty. Rows show Code, Description, **Qty\*** (highlighted box), Unit, Selling price, Disc %, Amount, ✕ remove — **Code, Description and Unit are read-only when the product already exists in Products** (🔒, ✎ opens it in Products); Qty, Selling price and Amount stay editable; **Disc % is editable only when the Payment type is Credit**; on Cash it is read-only and keeps its value (revision 10 also locks the selling price of products that already exist on Cash). A custom item button ("+ Item not in Products") adds a blank row (code gets the focus); such items are created in Products when the invoice is saved. Live totals box: items / units, Subtotal, Trade discount, Total. Save checks: invoice no., date, at least one item, a code on every row, quantity > 0 on every row. Reference code: Appendix F.
 **Delete invoice** confirmation says how many units come out of stock and that product details are not deleted.
 **Returns tab:** KPIs (units with us + value, sent waiting for credit, credit received); buttons **+ New customer return** (stand-alone return), **Mark ticked as sent to company**, **Record company credit for ticked**; table (tick box for With us/Sent, date, customer, product, qty, cost value, "What we gave" + condition, status badge + claim ref, company credit). **Credit window:** "Credit note: cost deducted from our invoice" (amount defaulting to the cost value, invoice drop-down, "Credit note no. / note") or "Company gave the items back (replacement)" (item list pre-filled).
 
@@ -2513,6 +2522,8 @@ function payExtra(){const e=$('#pe');if(!e)return;
 
 ## Appendix N — Revision 9 reference code (verbatim from the reference files)
 
+> Revision 10 replaces `invCredit`, `invDisc`, `invSync` and `drawInvRows` below with the versions in Appendix O.
+
 Other edits: `index.html` top bar is `<div class="top"><h2 id="pt">Dashboard Overview</h2><div class="tu" id="tu"></div></div>`; `applyBrand()` ends with `renderUsr()`; the settings form list `SF` gets `['businessSiteUrl','Business site link (opens in a new tab)','text']` after the website field; in `drawInvNew` the header field is `<div><label>Payment type</label><select onchange="S.invd.payMethod=this.value;drawInvRows()"><option…>Cash</option><option…>Credit</option></select></div>` and the default draft has `payMethod:'Cash'`; `saveSupplierInvoice_` builds `prodBySku` (active products by lower-case SKU) before mapping the items and uses `description: invDesc_(i, prodBySku)`; `saveSettings_` treats `businessSiteUrl` like `logo`/`website` (`safeUrl_`).
 
 **CSS (css/style.css)**
@@ -2596,4 +2607,42 @@ function invDesc_(i, prodBySku) {
   if (!pr) return d;
   return str_(pr.name + (/\(FREE\)\s*$/i.test(d) ? ' (FREE)' : ''), 200);
 }
+```
+
+## Appendix O — Revision 10 reference code (js/suppliers.js, verbatim)
+
+Other edits in the same file: `drawInvNew`/`vInvNew` call `$('#app').oninput=invSaveDraft;` after drawing; `invTot()` begins with `invSaveDraft();`; the buttons **+ Add manual invoice** and **Cancel** call `invClear()` (Cancel first asks "Discard this invoice draft?" when there are items); after a successful save `invClear()` replaces `S.invd=null`.
+
+```js
+/* Payment type: Cash (default) or Credit.
+   - An item that is already in Products: code, name and unit are always locked (change them in Products).
+   - On a CASH invoice the selling price and the discount are locked too, but they stay visible with the same values.
+   - On a CREDIT invoice the selling price and the discount of those items can be changed.
+   - The discount box of any row is locked on Cash (it keeps its value, nothing is reset or removed).
+   The invoice being typed is also kept as a draft in the browser, so rows never vanish when you leave the page. */
+const invCredit=()=>/credit/i.test((S.invd&&S.invd.payMethod)||''),invDisc=it=>Number(it.disc)||0;
+
+const invDraftGet=()=>{try{const d=JSON.parse(ls.get('invDraft','')||'null');return d&&Array.isArray(d.items)?d:null}catch(e){return null}};
+
+function invSaveDraft(){if(S.invd&&$('#ivrows'))ls.set('invDraft',JSON.stringify(S.invd))}
+
+function invClear(){S.invd=null;ls.set('invDraft','')}
+
+function invSync(it){const p=it.pid&&S.products.find(x=>x.id===it.pid);if(p){it.code=p.sku;it.description=p.name}return !!p}
+
+function drawInvRows(){const d=S.invd,cr=invCredit();
+ $('#ivrows').innerHTML=d.items.length?'<div class="tw"><table><thead><tr><th>Code</th><th>Description</th><th>Qty*</th><th>Unit</th><th>Selling price</th><th>Disc %</th><th class="r">Amount</th><th></th></tr></thead><tbody>'+
+ d.items.map((it,i)=>{const lk=invSync(it),L=lk?' readonly class="lk" title="From Products. To change it, edit the product in Products."':'',
+  P=lk&&!cr?' readonly class="lk" title="Locked on a Cash invoice. Choose Credit to change it."':'',D=!cr?' readonly class="lk" title="Locked on a Cash invoice. Choose Credit to change it."':'';
+  return '<tr><td><input id="icd'+i+'" style="width:120px" value="'+esc(it.code)+'"'+L+' oninput="invU('+i+',\'code\',this.value)" onchange="invCode('+i+',this.value)"></td><td><input style="width:230px" value="'+esc(it.description)+'"'+L+' oninput="invU('+i+',\'description\',this.value)"></td>'+
+  '<td><input id="iq'+i+'" type="number" inputmode="decimal" min="0" step="any" style="width:80px;border:2px solid var(--p,#4a90d9)" value="'+esc(it.qty)+'" placeholder="Qty" oninput="invU('+i+',\'qty\',this.value)" onkeydown="invQKey(event)"></td>'+
+  '<td><input style="width:85px" value="'+esc(it.uom)+'"'+L+' oninput="invU('+i+',\'uom\',this.value)"></td><td><input type="number" min="0" step="any" style="width:105px" value="'+it.unitPrice+'"'+P+' oninput="invU('+i+',\'unitPrice\',this.value)"></td>'+
+  '<td><input type="number" min="0" max="100" step="any" style="width:70px" value="'+(Number(it.disc)||0)+'"'+D+' oninput="invU('+i+',\'disc\',this.value)"></td><td class="r" id="ia'+i+'"></td><td style="white-space:nowrap">'+(lk?'<button class="btn alt" onclick="invEditProd(\''+esc(it.pid)+'\')" title="Edit this product in Products" aria-label="Edit in Products">✎</button> ':'')+'<button class="btn red" onclick="invRm('+i+')" aria-label="Remove">✕</button></td></tr>'}).join('')+
+  '</tbody></table></div><p class="lknote">🔒 Items already in Products: the code, name and unit cannot be changed here (press ✎ to edit the product in Products). '+(cr?'On a <b>Credit</b> invoice you can change their selling price and discount.':'On a <b>Cash</b> invoice their selling price and discount are locked too (they stay as they are). Choose <b>Credit</b> to change them.')+' Your invoice is saved as a draft while you type.</p>':'<div class="empty">No items yet. Search above, pick a product, then type the quantity.</div>';
+ invTot()}
+
+function vInvNew(){
+ S.invd=S.invd||invDraftGet()||{invoiceNo:'',date:ymd(new Date()),supplier:ls.get('invSup','Kelani Cables'),payMethod:'Cash',items:[],recvNow:false,recvDate:ymd(new Date())};
+ drawInvNew();$('#app').oninput=invSaveDraft;
+ if(!S.invs)run(null,async()=>{S.invs=await api('getSupplierInvoices',{})})}
 ```
