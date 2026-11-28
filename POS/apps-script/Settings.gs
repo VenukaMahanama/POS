@@ -15,7 +15,7 @@ function saveSettings_(p) {
     if (BOOL_KEYS.indexOf(k) > -1) v = (v === true || v === 'true') ? 'true' : 'false';
     else if (k === 'taxRate') v = String(num_(v, 'Tax rate', 0, 100));
     else if (k === 'primaryColor') { v = String(v).trim(); if (!/^#[0-9a-fA-F]{6}$/.test(v)) throw UErr('Primary color must look like #71a5d6.'); }
-    else if (k === 'logo' || k === 'website') v = safeUrl_(v);
+    else if (k === 'logo' || k === 'website' || k === 'businessSiteUrl') v = safeUrl_(v);
     else v = str_(v, 200, k === 'businessName', 'Business name');
     clean[k] = v;
   });

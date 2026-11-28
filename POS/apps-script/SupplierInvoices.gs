@@ -17,6 +17,12 @@ function sameInv_(x, no, so, tm) {
   if (so && tm && String(x.soNo) === so && String(x.postingTime) === tm) return true;
   return String(x.invoiceNo) === no && (!x.soNo || !so || String(x.soNo) === so) && (!x.postingTime || !tm || String(x.postingTime) === tm);
 }
+// An item that is already in Products keeps the product's own name: an invoice cannot rename it (change it in Products instead).
+function invDesc_(i, prodBySku) {
+  const d = str_(i.description, 200), pr = prodBySku[String(i.code || '').toLowerCase()];
+  if (!pr) return d;
+  return str_(pr.name + (/\(FREE\)\s*$/i.test(d) ? ' (FREE)' : ''), 200);
+}
 function saveSupplierInvoice_(p) {
   const lock = LockService.getScriptLock();
   if (!lock.tryLock(20000)) throw UErr('The system is busy. Please try again.');
@@ -26,13 +32,14 @@ function saveSupplierInvoice_(p) {
     if (readAll_('SupplierInvoices').some(function (x) { return sameInv_(x, no, so, tm); })) throw UErr('Invoice ' + no + (so ? ' (SO ' + so + (tm ? ', ' + tm : '') + ')' : '') + ' is already saved.');
     if (!Array.isArray(p.items) || !p.items.length) throw UErr('Add at least one item.');
     if (p.items.length > 300) throw UErr('Too many items on one invoice.');
+    const prodBySku = {}; readAll_('Products').forEach(function (x) { if (isAct_(x)) prodBySku[String(x.sku).toLowerCase()] = x; });
     let sub = 0, dis = 0;
     const items = p.items.map(function (i) {
       const q = num_(i.qty, 'Quantity'), dp = num_(i.disc || 0, 'Discount', 0, 100), amt = num_(i.amount, 'Amount');
       if (q <= 0) throw UErr('Quantity must be greater than zero.');
       sub += amt; dis += amt * dp / 100;
       return {
-        code: str_(i.code, 60, true, 'Item code'), description: str_(i.description, 200), quantity: q, uom: str_(i.uom, 20),
+        code: str_(i.code, 60, true, 'Item code'), description: invDesc_(i, prodBySku), quantity: q, uom: str_(i.uom, 20),
         unitPrice: num_(i.unitPrice, 'Unit price'), discPct: dp, amount: amt, netUnitCost: r2_(amt * (1 - dp / 100) / q), free: i.free === true || i.free === 'true'
       };
     });

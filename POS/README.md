@@ -125,7 +125,10 @@ Free hosting: GitHub > Settings > **Pages** > Branch `main`, folder `/ (root)`.
 | POS colours, tile style, buttons | `css/pos-theme.css` |
 | What a POS product tile shows | `drawGrid()` in `js/pos.js` |
 | Cart, discount, payment, checkout | `js/pos.js` |
+| Top bar: role, logout, Business site button | `renderUsr()` in `js/core.js` (the address is the *Business site link* in Settings) |
 | Cheques, credits, rejected cheques | `js/payments.js` + `apps-script/Payments.gs` |
+| Supplier invoice page (payment type, locked items, discount) | `drawInvRows()` in `js/suppliers.js` + `apps-script/SupplierInvoices.gs` |
+| Adding a customer from the POS | `posAddCust()` in `js/pos.js` |
 | Dashboard figures | `js/dashboard.js` + `apps-script/Reports.gs` |
 | PDF reports and price list | `js/reports.js` + `getStockReport_` in `Reports.gs` |
 | Stock, product history | `js/products.js` + `apps-script/Products.gs` |
@@ -140,4 +143,4 @@ Free hosting: GitHub > Settings > **Pages** > Branch `main`, folder `/ (root)`.
 - **Blank page or red errors:** press `F12` > *Console*. A file that does not load usually means the folder was opened one level too high; open the folder that contains `index.html`.
 - **Log-in asks again and again:** the Web App access must be **Anyone**.
 - **Wrong dates or times:** set the same time zone in *Project Settings* of Apps Script and in `appsscript.json`.
-- **Old page after an update:** hard refresh with `Ctrl+Shift+R` (the script links end with `?v=8`; change the number to force an update).
+- **Old page after an update:** hard refresh with `Ctrl+Shift+R` (the script links end with `?v=9`; change the number to force an update).

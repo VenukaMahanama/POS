@@ -23,7 +23,7 @@ function setupDatabase() {
 }
 
 /* ---------- helpers ---------- */
-const SCHEMA_VER = 'r6'; // change this text whenever columns are added, so every sheet is upgraded once, automatically
+const SCHEMA_VER = 'r7'; // change this text whenever columns are added, so every sheet is upgraded once, automatically
 function ensureDb_() {
   const ss = SpreadsheetApp.getActiveSpreadsheet(), pr = PropertiesService.getScriptProperties();
   if (Object.keys(SCHEMAS).some(function (n) { return !ss.getSheetByName(n); }) || pr.getProperty('schemaVer') !== SCHEMA_VER) { setupDatabase(); pr.setProperty('schemaVer', SCHEMA_VER); }

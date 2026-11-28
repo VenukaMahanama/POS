@@ -36,7 +36,7 @@ const ORDER_STATUS = ['Ordered', 'Received', 'Cancelled', 'Closed'];
 const DEFAULTS = {
   businessName: 'CEYLON VOLT DISTRIBUTOR', businessCategory: 'Distribution Agency', currency: 'LKR', currencySymbol: 'Rs',
   address: '96/A Janaraja Rd,Waharaja Watte,Matara,Sri Lanka', city: 'Matara', country: 'Sri Lanka', phone: '0715958068',
-  email: 'ceylonvoltdistributor@gmail.com', website: '', logo: 'https://i.ibb.co/yBgr6Jts/Ceylon-Volt-Distributor-Logo-1.png',
+  email: 'ceylonvoltdistributor@gmail.com', website: '', businessSiteUrl: 'http://kclsfa.acl.lk:8796/Reports/ReportPrint.aspx', logo: 'https://i.ibb.co/yBgr6Jts/Ceylon-Volt-Distributor-Logo-1.png',
   primaryColor: '#71a5d6', taxEnabled: 'false', taxRate: '0', receiptFooter: 'Thank You !',
   receiptShowAddress: 'true', receiptShowPhone: 'true', receiptShowEmail: 'false', receiptShowLogo: 'true'
 };

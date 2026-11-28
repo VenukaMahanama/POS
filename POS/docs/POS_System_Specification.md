@@ -6,6 +6,15 @@
 
 ---
 
+## Revision 9 (28 Nov 2026) — what changed since revision 8
+
+1. **Role and Logout on every page, top right** (7.1): the white top bar now shows, on the right, a **🌐 Business site** button (Admin only), the user's name (hidden on phones), a **role badge** (purple **Admin** / teal **Cashier**) and a red **⎋ Logout** button. Logout asks "The cart still has items. Log out anyway?" when the POS cart is not empty. (The small user chip at the bottom of the sidebar still opens *My account*.)
+2. **Business site link**: the button opens `http://kclsfa.acl.lk:8796/Reports/ReportPrint.aspx` in a **new tab** (`target="_blank" rel="noopener noreferrer"`). The address is the new setting **`businessSiteUrl`** (Settings page: "Business site link (opens in a new tab)"; default above; must start with `http://` or `https://`, otherwise stored empty and the button is hidden). It is an address on the company's own network, so it opens only where that network/VPN is reachable; it cannot be shown inside the POS page.
+3. **Supplier invoices — item details of products that already exist are locked** (5.11, 7.15): on the manual invoice page a row for a product that is already in Products (picked from the search, or whose typed code matches a product's SKU) shows **Code, Description and Unit read-only** (grey, dashed, 🔒) with a ✎ button that opens that product in Products. The row always follows the product (rename it in Products and the invoice row changes). Typing a code that exists converts the row (details loaded, price/discount prefilled from the last invoice line) with a message. **Qty, Selling price and Amount stay editable.** The server enforces the name too: `saveSupplierInvoice` replaces the description of any line whose code matches an active product by the product's name (keeping a trailing "(FREE)").
+4. **Supplier invoices — "Payment terms" became "Payment type"**: a drop-down **Cash** (default) / **Credit**; saved in `payMethod` as `Cash` or `Credit`. **The item discount (Disc %) can be changed only when the type is Credit**: with Cash the box is disabled and shows 0 and the discount is **0 in the totals and in the saved invoice**; switching to Credit unlocks the boxes again (the values typed earlier come back; picking a product prefills the discount of its last invoice line). Imported (PDF) invoices keep what the supplier invoice says.
+5. **Add a new customer from the POS** (7.3): when the name typed in the POS customer box matches nobody (or only partly), the list ends with **➕ Add “name” as a new customer**. It opens a form (**Name\*** prefilled, Phone, Address, Route [with the existing routes], Email) → `saveCustomer` (allowed for Cashiers) → the customer is added to the list and **selected for the sale at once** ("✓ Customer selected", special prices loaded). Enter in the box picks the first row, so with no match Enter opens this form. An exact name match shows no add row.
+6. `SCHEMA_VER` is now `'r7'` (so the new setting row is seeded automatically); script links end with `?v=9`.
+
 ## Revision 8 (26 Nov 2026) — what changed since revision 7
 
 1. **The project is now a folder of many files** (section 13) instead of one `index.html` and one `Code.gs`: `index.html` + `css/` + `js/` for the website and `apps-script/*.gs` for the backend, with a `README.md` that explains how to run it in VS Code (Live Server), create the backend, use `clasp`, and push to GitHub. The behaviour of every screen and action is unchanged except for points 2–4.
@@ -120,7 +129,7 @@ It covers: selling (day sales, credit, cheques), customer returns, collecting mo
 
 **Locking:** every action that writes uses `LockService.getScriptLock().tryLock(20000)`; if it cannot get the lock → "The system is busy. Please try again."
 
-**Schema upgrades:** `ensureDb_()` runs on every request and calls `setupDatabase()` if any sheet is missing. `setupDatabase()` creates missing sheets, writes bold header rows, freezes row 1, widens sheets if needed, formats text columns, deletes an empty default `Sheet1`, and seeds the Settings sheet with defaults for missing keys. **New columns are always appended at the END of a schema** so existing data never shifts. Running `setupDatabase()` again labels new columns on existing sheets. **Revision 5:** `ensureDb_()` also calls `setupDatabase()` once automatically when the text constant `SCHEMA_VER` (now `'r5'`) differs from the Script Property `schemaVer` (then stores it); `rejectedDate` is a text column and is formatted as `yyyy-MM-dd` when read.
+**Schema upgrades:** `ensureDb_()` runs on every request and calls `setupDatabase()` if any sheet is missing. `setupDatabase()` creates missing sheets, writes bold header rows, freezes row 1, widens sheets if needed, formats text columns, deletes an empty default `Sheet1`, and seeds the Settings sheet with defaults for missing keys. **New columns are always appended at the END of a schema** so existing data never shifts. Running `setupDatabase()` again labels new columns on existing sheets. **Revision 5:** `ensureDb_()` also calls `setupDatabase()` once automatically when the text constant `SCHEMA_VER` (now `'r7'`; see revision 9) differs from the Script Property `schemaVer` (then stores it); `rejectedDate` is a text column and is formatted as `yyyy-MM-dd` when read.
 
 ### 2.4 ID prefixes
 
@@ -167,7 +176,7 @@ Product `P`, Category `C`, Customer `U`, Sale `S`, Sale item `I`, Expense `E`, U
 The exact column lists (in order) are in **Appendix A**. This section explains the meaning and the rules attached to each entity.
 
 ### 4.1 Settings (`key`, `value`, `updatedAt`)
-One row per key; all values are text. Seeded defaults (Appendix C). Boolean keys (`taxEnabled`, `receiptShowAddress`, `receiptShowPhone`, `receiptShowEmail`, `receiptShowLogo`) are stored as `'true'/'false'`. Validation on save: `taxRate` 0–100; `primaryColor` must look like `#71a5d6`; `logo` and `website` must start with `http(s)://` (otherwise stored empty); `businessName` is required.
+One row per key; all values are text. Seeded defaults (Appendix C). Boolean keys (`taxEnabled`, `receiptShowAddress`, `receiptShowPhone`, `receiptShowEmail`, `receiptShowLogo`) are stored as `'true'/'false'`. Validation on save: `taxRate` 0–100; `primaryColor` must look like `#71a5d6`; `logo`, `website` and `businessSiteUrl` must start with `http(s)://` (otherwise stored empty); `businessName` is required.
 
 ### 4.2 Products
 `sku, name, categoryId, categoryName (copy of the category name, updated when the category is renamed), price (selling), cost, stock, lowStockLimit (default 5), imageUrl, active`.
@@ -417,7 +426,7 @@ All actions are called as `{action, payload}`. Role column: **O** = open (no log
 
 ### 7.1 Global look and behaviour
 
-* **Layout:** a dark navy sidebar (250 px, sticky, full height, gradient `#0b1d45 → #07122b`) and a content area with a white top bar (page title, 26 px) and the page body (`#app`, padding 20×24, max width 1400). Below 900 px wide the sidebar becomes a sticky top bar with a horizontally scrolling menu, the user chip is hidden, and the POS cart becomes a slide-up panel with a bottom bar.
+* **Layout:** a dark navy sidebar (250 px, sticky, full height, gradient `#0b1d45 → #07122b`) and a content area with a white top bar (page title, 26 px, and on the right the **Business site** button [Admin], user name, role badge and **Logout** button) and the page body (`#app`, padding 20×24, max width 1400). Below 900 px wide the sidebar becomes a sticky top bar with a horizontally scrolling menu, the user chip is hidden, and the POS cart becomes a slide-up panel with a bottom bar.
 * **Sidebar (admin), in this exact order, with icons:** 🏠 Dashboard · 🧾 POS · 📝 Orders · 📥 Invoices · 📦 Products · ⚠️ Low Stock · 🗂️ Categories · 📈 Sales · 👤 Customers · 💳 Cheques & Credits · 💲 Expenses · 📊 Reports · 🤖 Assistant · ⚙️ Settings. Each (except Dashboard) shows a "›" chevron. Active item = rounded pill with a lighter gradient. Brand block at the top: logo (white rounded square), business name in small uppercase cyan (`#8fe3ff`), business category beneath. At the bottom a user chip "👤 username · Role" opens *My account* (change password, log out).
 * **Red count badges** on sidebar items: Low Stock (number of low-stock products), Invoices (invoices not yet received), Cheques & Credits (bills due today or overdue).
 * **Hidden views reached from buttons** (they highlight their parent menu item and have their own page title): New Order (parent Orders), New Invoice (Invoices), Stock count / adjust (Products), Profit by product / customer (Reports), End-of-day closing (Sales), Customer profile (Customers), Edit sale (Sales).
@@ -452,7 +461,7 @@ Top row: mode select, a grey hint "A customer's cheque was rejected (bounced) by
   * **Rows (no horizontal scrolling):** item name (wraps) with "Rs price each" under it · **quantity typed in a number box** (decimals allowed, capped at stock) · line total · ✕. Typing updates totals live.
   * Returned items appear below as rows (item, condition/reason, quantity, what we give).
   * **Sale date** (Admin only): defaults to today, cannot be in the future; an earlier date shows "⏪ Back-dated sale: it will be recorded on DATE". Resets to today after each sale.
-  * **Customer\*** (required): type to search by name, phone or route; list is sorted best customer first and shows the route; Enter picks the first match; a "✓ Customer selected" hint appears.
+  * **Customer\*** (required): type to search by name, phone or route; list is sorted best customer first and shows the route; Enter picks the first match; a "✓ Customer selected" hint appears. If the typed name matches nobody exactly, the last line is **➕ Add “name” as a new customer** (form with Name\*, Phone, Address, Route, Email; saved with `saveCustomer`, then selected for the sale).
   * **Payment method:** Cash / Credit / Cheque. Credit asks for a required **Due date**. **Cheque shows one card per cheque** (Amount, Banking date*; ✕ removes a card when there are 2 or more; no cheque number or bank) and a button **+ Add another cheque** (the new card is pre-filled with the amount still missing and the previous date). With one cheque the amount may stay empty (= the full bill). With 2 or more a line shows "✓ The cheques add up to X" (green) or "Cheques total X of Y · still to add Z / too much by Z" (red); it updates live as the cart changes.
   * **Discount:** type (**Percentage by default**, also after every sale; or Amount) and value, **never filled automatically**. Each cart line has a small tick box **"gets discount"** under the item name (ticked = gets it). Under the discount box: "Discount applies to: all items · no items (then tick only the items that get it)". The Totals show "Discount (on Rs X of items)" when only some items get it.
   * **Totals:** Subtotal, Discount, Tax (if enabled), Returns deducted, **Total to pay**, and a red "Give back in cash" line when the returns exceed the bill. A note says replacement items are free and recorded in today's sales.
@@ -512,7 +521,7 @@ Two tabs: **Invoices | Returns**.
 **Import window:** "Our name on invoices" (default `Nethmina`, remembered), Supplier (default `Kelani Cables`, remembered), PDF file chooser, or paste text → **Read invoices**. The result lists every invoice found with a checkbox (ticked only if the ship-to name contains our name, it is not a duplicate, and it has items), date/time/SO, customer, item count, free-item note, total, and warnings ("Already saved", "Not ours", "Items add up to X but the invoice says Y. Check it.", "No item lines could be read"). **Save ticked invoices** saves them as Pending and adds missing products.
 **Receive window:** explains how many lines match existing products, lists any new products with selling-price boxes pre-filled from the invoice, and (when some existing products have a different selling price) a tick box "Also set the selling price of N existing product(s) to the invoice price".
 **Pay window:** balance, Paid by (Cheque / Bank Transfer), amount (default balance), date, note.
-**Manual entry page (revision 2):** header card (invoice no.\*, date\*, supplier [remembered], payment terms). Under it an **Add item** search box ("Search products…") with a drop-down of up to 40 matching products (match on name or SKU; exact SKU / name-starts-with first, then A–Z; shows name, SKU, stock and "already on this invoice"); arrow keys move, **Enter picks**, Esc closes; the last drop-down line is "Add “text” as a new item". Picking a product adds a row **auto-filled**: code = SKU, description = name, unit / selling price / disc % from the **most recent supplier-invoice line with that code** (else the product's selling price, 0 %, unit `Numbers`), **quantity empty**; the cursor jumps to that row's Qty box (selected). **Enter in Qty returns to the search box** for the next item. Picking a product already on the invoice just focuses its Qty. Rows show Code, Description, **Qty\*** (highlighted box), Unit, Selling price, Disc %, Amount, ✕ remove — everything except Qty stays editable. A custom item button ("+ Item not in Products") adds a blank row (code gets the focus); such items are created in Products when the invoice is saved. Live totals box: items / units, Subtotal, Trade discount, Total. Save checks: invoice no., date, at least one item, a code on every row, quantity > 0 on every row. Reference code: Appendix F.
+**Manual entry page (revision 2):** header card (invoice no.\*, invoice date\*, supplier [remembered], **Payment type** [Cash default / Credit]). Under it an **Add item** search box ("Search products…") with a drop-down of up to 40 matching products (match on name or SKU; exact SKU / name-starts-with first, then A–Z; shows name, SKU, stock and "already on this invoice"); arrow keys move, **Enter picks**, Esc closes; the last drop-down line is "Add “text” as a new item". Picking a product adds a row **auto-filled**: code = SKU, description = name, unit / selling price / disc % from the **most recent supplier-invoice line with that code** (else the product's selling price, 0 %, unit `Numbers`), **quantity empty**; the cursor jumps to that row's Qty box (selected). **Enter in Qty returns to the search box** for the next item. Picking a product already on the invoice just focuses its Qty. Rows show Code, Description, **Qty\*** (highlighted box), Unit, Selling price, Disc %, Amount, ✕ remove — **Code, Description and Unit are read-only when the product already exists in Products** (🔒, ✎ opens it in Products); Qty, Selling price and Amount stay editable; **Disc % is editable only when the Payment type is Credit** (Cash: disabled, 0). A custom item button ("+ Item not in Products") adds a blank row (code gets the focus); such items are created in Products when the invoice is saved. Live totals box: items / units, Subtotal, Trade discount, Total. Save checks: invoice no., date, at least one item, a code on every row, quantity > 0 on every row. Reference code: Appendix F.
 **Delete invoice** confirmation says how many units come out of stock and that product details are not deleted.
 **Returns tab:** KPIs (units with us + value, sent waiting for credit, credit received); buttons **+ New customer return** (stand-alone return), **Mark ticked as sent to company**, **Record company credit for ticked**; table (tick box for With us/Sent, date, customer, product, qty, cost value, "What we gave" + condition, status badge + claim ref, company credit). **Credit window:** "Credit note: cost deducted from our invoice" (amount defaulting to the cost value, invoice drop-down, "Credit note no. / note") or "Company gave the items back (replacement)" (item list pre-filled).
 
@@ -759,7 +768,7 @@ Total: 72 actions (counted from `actions_()`; revision 5 added `rejectCheque` an
 const DEFAULTS = {
   businessName: 'CEYLON VOLT DISTRIBUTOR', businessCategory: 'Distribution Agency', currency: 'LKR', currencySymbol: 'Rs',
   address: '96/A Janaraja Rd,Waharaja Watte,Matara,Sri Lanka', city: 'Matara', country: 'Sri Lanka', phone: '0715958068',
-  email: 'ceylonvoltdistributor@gmail.com', website: '', logo: 'https://i.ibb.co/yBgr6Jts/Ceylon-Volt-Distributor-Logo-1.png',
+  email: 'ceylonvoltdistributor@gmail.com', website: '', businessSiteUrl: 'http://kclsfa.acl.lk:8796/Reports/ReportPrint.aspx', logo: 'https://i.ibb.co/yBgr6Jts/Ceylon-Volt-Distributor-Logo-1.png',
   primaryColor: '#71a5d6', taxEnabled: 'false', taxRate: '0', receiptFooter: 'Thank You !',
   receiptShowAddress: 'true', receiptShowPhone: 'true', receiptShowEmail: 'false', receiptShowLogo: 'true'
 };
@@ -2500,4 +2509,91 @@ function payExtra(){const e=$('#pe');if(!e)return;
 /* ---- the bar / button that brings the cart back ---- */
 .cartbar{background:linear-gradient(90deg,var(--pos-a),var(--pos-b))!important;color:#fff!important}
 .cartbar.show{box-shadow:0 6px 18px #6366f166}
+```
+
+## Appendix N — Revision 9 reference code (verbatim from the reference files)
+
+Other edits: `index.html` top bar is `<div class="top"><h2 id="pt">Dashboard Overview</h2><div class="tu" id="tu"></div></div>`; `applyBrand()` ends with `renderUsr()`; the settings form list `SF` gets `['businessSiteUrl','Business site link (opens in a new tab)','text']` after the website field; in `drawInvNew` the header field is `<div><label>Payment type</label><select onchange="S.invd.payMethod=this.value;drawInvRows()"><option…>Cash</option><option…>Credit</option></select></div>` and the default draft has `payMethod:'Cash'`; `saveSupplierInvoice_` builds `prodBySku` (active products by lower-case SKU) before mapping the items and uses `description: invDesc_(i, prodBySku)`; `saveSettings_` treats `businessSiteUrl` like `logo`/`website` (`safeUrl_`).
+
+**CSS (css/style.css)**
+
+```css
+input.lk,input.lk:disabled{background:#f1f5f9;color:#475569;border-style:dashed;cursor:not-allowed}
+.lknote{font-size:12.5px;color:var(--m);margin:8px 0 0}
+.cl .addnew{color:#047857;font-weight:600;border-top:1px solid var(--b)}
+.top{...;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.tu{display:flex;align-items:center;gap:8px;flex:none;flex-wrap:wrap;justify-content:flex-end}
+.role{padding:3px 11px;border-radius:99px;font-size:12.5px;font-weight:700}.role.Admin{background:#ede9fe;color:#5b21b6}.role.Cashier{background:#ccfbf1;color:#0f766e}
+```
+
+**js/core.js**
+
+```js
+const BIZ_DEFAULT='http://kclsfa.acl.lk:8796/Reports/ReportPrint.aspx';
+
+const bizHref=()=>{const u=String((S.settings&&S.settings.businessSiteUrl)||BIZ_DEFAULT).trim();return /^https?:\/\//i.test(u)?u:''};
+
+function renderUsr(){const e=$('#usr');if(!S.user)return;if(e)e.innerHTML='👤 '+esc(S.user.username)+' · '+esc(S.user.role);
+ const t=$('#tu');if(t)t.innerHTML=(isAdmin()&&bizHref()?'<a class="btn alt" href="'+esc(bizHref())+'" target="_blank" rel="noopener noreferrer" title="Open our business site in a new tab">🌐 Business site</a>':'')+'<span class="who" title="Logged in as">👤 '+esc(S.user.username)+'</span><span class="role '+esc(S.user.role)+'" title="Running role">'+esc(S.user.role)+'</span><button class="btn red" onclick="doLogout()">⎋ Logout</button>'}
+
+function doLogout(){if(S.cart&&S.cart.length&&!confirm('The cart still has items. Log out anyway?'))return;logout()}
+```
+
+**js/pos.js**
+
+```js
+function custSearch(q,keep){const el=$('#cdd');if(!el)return;
+ if(!keep){if(S.cust){S.cprices={};if(S.autoDv){S.dv='';S.autoDv=false}}S.cust='';S.custName=q;const o=$('#cok');if(o)o.textContent=''}
+ const k=String(q||'').toLowerCase(),L=S.customers.filter(c=>!k||[c.name,c.phone,c.route].some(x=>String(x||'').toLowerCase().indexOf(k)>-1)).sort((a,b)=>custTotal(b.id)-custTotal(a.id)||String(a.name).localeCompare(String(b.name))).slice(0,80);
+ const t=String(q||'').trim(),exact=t&&S.customers.some(c=>String(c.name).trim().toLowerCase()===t.toLowerCase());
+ el.innerHTML=L.map(c=>'<div onclick="pickCust(\''+esc(c.id)+'\')">'+esc(c.name)+(c.route?' <small style="color:#1e7d4f">'+esc(c.route)+'</small>':'')+(c.phone?' <small style="color:var(--m)">'+esc(c.phone)+'</small>':'')+'</div>').join('')+(t&&!exact?'<div class="addnew" onclick="posAddCust()">➕ Add “'+esc(t)+'” as a new customer</div>':(L.length?'':'<div style="color:var(--m);cursor:default">Type a name to search.</div>'));el.style.display='block'}
+
+function posAddCust(){const nm=String(($('#cin')||{}).value||S.custName||'').trim();$('#cdd').style.display='none';
+ modal('<h3>Add new customer</h3><form onsubmit="posSaveCust(event)"><label>Name*</label><input name="name" required value="'+esc(nm)+'"><label>Phone</label><input name="phone" type="tel" placeholder="e.g. 0771234567"><label>Address</label><input name="address"><label>Route</label><input name="route" list="rtl2" placeholder="e.g. Matara, Galle"><datalist id="rtl2">'+routeList().map(r=>'<option value="'+esc(r)+'">').join('')+'</datalist><label>Email</label><input name="email" type="email"><div class="row" style="margin-top:12px"><button class="btn" type="submit">Save and use this customer</button><button class="btn alt" type="button" onclick="closeModal()">Cancel</button></div></form>')}
+
+function posSaveCust(e){e.preventDefault();run(e.submitter,async()=>{const c=await api('saveCustomer',fd(e.target));S.customers.push(c);closeModal();pickCust(c.id);toast('Customer “'+c.name+'” added and selected','ok')})}
+```
+
+**js/suppliers.js**
+
+```js
+const invCredit=()=>/credit/i.test((S.invd&&S.invd.payMethod)||''),invDisc=it=>invCredit()?(Number(it.disc)||0):0;
+
+function invSync(it){const p=it.pid&&S.products.find(x=>x.id===it.pid);if(p){it.code=p.sku;it.description=p.name}return !!p}
+
+function drawInvRows(){const d=S.invd,cr=invCredit();
+ $('#ivrows').innerHTML=d.items.length?'<div class="tw"><table><thead><tr><th>Code</th><th>Description</th><th>Qty*</th><th>Unit</th><th>Selling price</th><th>Disc %</th><th class="r">Amount</th><th></th></tr></thead><tbody>'+
+ d.items.map((it,i)=>{const lk=invSync(it),L=lk?' readonly class="lk" title="From Products. To change it, edit the product in Products."':'';
+  return '<tr><td><input id="icd'+i+'" style="width:120px" value="'+esc(it.code)+'"'+L+' oninput="invU('+i+',\'code\',this.value)" onchange="invCode('+i+',this.value)"></td><td><input style="width:230px" value="'+esc(it.description)+'"'+L+' oninput="invU('+i+',\'description\',this.value)"></td>'+
+  '<td><input id="iq'+i+'" type="number" inputmode="decimal" min="0" step="any" style="width:80px;border:2px solid var(--p,#4a90d9)" value="'+esc(it.qty)+'" placeholder="Qty" oninput="invU('+i+',\'qty\',this.value)" onkeydown="invQKey(event)"></td>'+
+  '<td><input style="width:85px" value="'+esc(it.uom)+'"'+L+' oninput="invU('+i+',\'uom\',this.value)"></td><td><input type="number" min="0" step="any" style="width:105px" value="'+it.unitPrice+'" oninput="invU('+i+',\'unitPrice\',this.value)"></td>'+
+  '<td><input type="number" min="0" max="100" step="any" style="width:70px" value="'+(cr?it.disc:0)+'"'+(cr?'':' disabled class="lk" title="The discount can be changed only when the payment type is Credit"')+' oninput="invU('+i+',\'disc\',this.value)"></td><td class="r" id="ia'+i+'"></td><td style="white-space:nowrap">'+(lk?'<button class="btn alt" onclick="invEditProd(\''+esc(it.pid)+'\')" title="Edit this product in Products" aria-label="Edit in Products">✎</button> ':'')+'<button class="btn red" onclick="invRm('+i+')" aria-label="Remove">✕</button></td></tr>'}).join('')+
+  '</tbody></table></div><p class="lknote">🔒 Items that are already in Products cannot be changed here. To change a code, name or unit, press ✎ (or open Products) and edit the product.'+(cr?'':' The discount can be changed only when the payment type is <b>Credit</b>.')+'</p>':'<div class="empty">No items yet. Search above, pick a product, then type the quantity.</div>';
+ invTot()}
+
+function invCode(i,v){const it=S.invd.items[i];if(!it||it.pid)return;const p=findSku(String(v).trim());if(!p)return;const l=invLast(p.sku);
+ Object.assign(it,{pid:p.id,code:p.sku,description:p.name,uom:(l&&l.uom)||it.uom||'Numbers',unitPrice:l?Number(l.unitPrice):(Number(it.unitPrice)||Number(p.price)||0),disc:l?Number(l.discPct)||0:it.disc});drawInvRows();toast('“'+p.name+'” is already in Products, so its details were loaded from Products and locked.','ok')}
+
+function invEditProd(id){go('products');setTimeout(()=>{try{prodForm(id)}catch(e){}},500)}
+
+function invTot(){let sub=0,dis=0,u=0;S.invd.items.forEach((it,i)=>{const q=Number(it.qty)||0,a=Math.round(q*it.unitPrice*100)/100;sub+=a;dis+=a*invDisc(it)/100;u+=q;const e=$('#ia'+i);if(e)e.textContent=money(a)});
+ const t=$('#it');if(t)t.innerHTML=S.invd.items.length?'<table style="max-width:340px;margin-left:auto"><tr><td>Items / units</td><td class="r">'+S.invd.items.length+' / '+u+'</td></tr><tr><td>Subtotal</td><td class="r">'+money(sub)+'</td></tr><tr><td>Trade discount</td><td class="r">-'+money(dis)+'</td></tr><tr><td><b>Total</b></td><td class="r"><b>'+money(sub-dis)+'</b></td></tr></table>':''}
+
+function saveInvNew(b){run(b,async()=>{const d=S.invd;
+ if(!d.invoiceNo.trim())throw new Error('Enter the invoice number.');if(!d.date)throw new Error('Enter the invoice date.');
+ const L=d.items;if(!L.length)throw new Error('Add at least one item.');
+ L.forEach((i,n)=>{if(!String(i.code).trim())throw new Error('Row '+(n+1)+' needs a code (SKU).');if(!(Number(i.qty)>0))throw new Error('Enter the quantity for '+(i.description||i.code)+'.')});
+ const rs=await api('saveSupplierInvoice',{invoiceNo:d.invoiceNo,date:d.date,supplier:d.supplier,payMethod:invCredit()?'Credit':'Cash',customerName:'',items:L.map(i=>({code:i.code,description:i.description,qty:Number(i.qty),uom:i.uom,unitPrice:i.unitPrice,disc:invDisc(i),amount:Math.round(Number(i.qty)*i.unitPrice*100)/100}))});
+ let rcv='';if(d.recvNow){try{await api('receiveSupplierInvoice',{id:rs.id,receivedDate:d.recvDate||ymd(new Date())});rcv=' and stock received'}catch(e){toast('Saved, but receiving the stock failed: '+e.message,'err')}}
+ ls.set('invSup',d.supplier);S.invd=null;await loadAll();await updInv();toast('Invoice saved'+rcv+(rs.created?' and '+rs.created+' new product(s) added to Products':''),'ok');go('invoices')})}
+```
+
+**apps-script/SupplierInvoices.gs**
+
+```js
+function invDesc_(i, prodBySku) {
+  const d = str_(i.description, 200), pr = prodBySku[String(i.code || '').toLowerCase()];
+  if (!pr) return d;
+  return str_(pr.name + (/\(FREE\)\s*$/i.test(d) ? ' (FREE)' : ''), 200);
+}
 ```

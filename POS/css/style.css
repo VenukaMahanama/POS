@@ -15,7 +15,15 @@ nav button .ch{opacity:.55;font-size:13px}
 nav button:hover{background:#ffffff12}
 nav button.on{background:linear-gradient(90deg,#3b4f7a,#26365c);color:#fff;font-weight:600}
 .content{flex:1;min-width:0}
-.top{background:#fff;padding:18px 24px;border-bottom:1px solid var(--b)}
+.top{background:#fff;padding:18px 24px;border-bottom:1px solid var(--b);display:flex;align-items:center;justify-content:space-between;gap:12px}
+.tu{display:flex;align-items:center;gap:8px;flex:none;flex-wrap:wrap;justify-content:flex-end}
+.tu .who{font-size:14px;color:var(--m)}
+.tu .btn{padding:6px 12px;min-height:34px;font-size:13.5px}
+.role{padding:3px 11px;border-radius:99px;font-size:12.5px;font-weight:700}.role.Admin{background:#ede9fe;color:#5b21b6}.role.Cashier{background:#ccfbf1;color:#0f766e}
+a.btn{text-decoration:none;display:inline-flex;align-items:center;gap:4px}
+input.lk,input.lk:disabled{background:#f1f5f9;color:#475569;border-style:dashed;cursor:not-allowed}
+.lknote{font-size:12.5px;color:var(--m);margin:8px 0 0}
+.cl .addnew{color:#047857;font-weight:600;border-top:1px solid var(--b)}
 .top h2{margin:0;font-size:26px;font-weight:500}
 main{padding:20px 24px;max-width:1400px;margin:auto}
 .kpis{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
@@ -85,7 +93,7 @@ nav button .lb{flex:1}
  .brand{padding:8px 10px}.brand small{display:none}
  nav{flex-direction:row;overflow-x:auto;padding:6px;flex:1}
  nav button{padding:8px 12px;font-size:14px;white-space:nowrap}nav button .ch{display:none}
- .top{padding:12px 14px}.top h2{font-size:20px}main{padding:12px}}
+ .top{padding:12px 14px}.top h2{font-size:20px}.tu .who{display:none}main{padding:12px}}
 @media(max-width:899px){
  .cartbar{display:flex;position:fixed;bottom:0;left:0;right:0;background:var(--p);color:var(--pt);padding:14px 16px;justify-content:space-between;z-index:30;cursor:pointer;font-weight:600}
  main{padding-bottom:76px}.cartpane{display:none}
